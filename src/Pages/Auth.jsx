@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { useAuth } from '../context/AuthContext'
+import { loginUser } from '../services/api'
+
 
 export default function Auth() {
     const navigate = useNavigate()
     const [searchParams] = useSearchParams()
     const [tab, setTab] = useState('signin')
     const [error, setError] = useState('')
+    const [loading, setLoading] = useState(false)
     const [showPwd, setShowPwd] = useState(false)
     const [strength, setStrength] = useState(0)
+    const { login } = useAuth()
 
     useEffect(() => {
         const t = searchParams.get('tab')
@@ -23,31 +28,32 @@ export default function Auth() {
         if (/[^A-Za-z0-9]/.test(val)) score++
         setStrength(score)
     }
-    /*function handleSignin(e) {
-        e.preventDefault()
-        const terms = e.target.terms.checked
-        if (!terms) { setError('Please accept the Terms of Service.'); return }
-        setError('')
-        navigate('/role-selection')
-    }*/
-    function handleSignin(e) {
+
+    async function handleSignin(e) {
         e.preventDefault()
         const email = e.target.email.value
         const pwd = e.target.password.value
         if (!email || !pwd) { setError('Please fill in all fields.'); return }
         setError('')
-        navigate('/role-selection')
-        /*// TODO: POST /api/auth/login
-        alert('Connect to your Node.js /api/auth/login endpoint!')*/
+        setLoading(true)
+        try {
+            const userData = await loginUser(email, pwd)
+            login(userData)
+            navigate('/role-selection') // or '/dashboard' depending on your flow
+        } catch (err) {
+            setError('Invalid email or password.')
+        } finally {
+            setLoading(false)
+        }
     }
     function handleSignup(e) {
         e.preventDefault()
         const terms = e.target.terms.checked
         if (!terms) { setError('Please accept the Terms of Service.'); return }
         setError('')
+        // signup endpoint doesn't exist yet — keeping mock flow for now
         navigate('/role-selection')
-    }
-    /*function handleSignup(e) {
+    }    /*function handleSignup(e) {
         e.preventDefault()
         const terms = e.target.terms.checked
         if (!terms) { setError('Please accept the Terms of Service.'); return }
@@ -168,9 +174,8 @@ export default function Auth() {
                                 Keep me signed in for 30 days
                             </div>
 
-                            <button type="submit" style={submitStyle}>
-                                Sign in
-                                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 7.5h11M8.5 3l4.5 4.5L8.5 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                            <button type="submit" style={submitStyle} disabled={loading}>
+                                {loading ? 'Signing in...' : 'Sign in →'}
                             </button>
 
                             <Divider />
@@ -359,7 +364,7 @@ export default function Auth() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     )
 }
 
