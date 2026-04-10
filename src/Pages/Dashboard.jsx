@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getAllFlags, getAllExperiments } from '../services/api'
 
 const flags = [
     { name: 'new-checkout-flow', desc: 'Redesigned cart + payment UX', pct: '50%', status: true, env: 'production' },
@@ -33,7 +34,28 @@ const navItems = [
 export default function Dashboard() {
     const navigate = useNavigate()
     const [activeNav, setActiveNav] = useState('overview')
-    const [flagStates, setFlagStates] = useState(flags.map(f => f.status))
+    const [flags, setFlags] = useState([])
+    const [experiments, setExperiments] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [flagStates, setFlagStates] = useState([])
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                const [flagsData, experimentsData] = await Promise.all([
+                    getAllFlags(),
+                    getAllExperiments()
+                ])
+                setFlags(flagsData)
+                setFlagStates(flagsData.map(f => f.is_enabled))
+                setExperiments(experimentsData)
+            } catch (err) {
+                console.error('Failed to load dashboard data:', err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchData()
+    }, [])
 
     function toggleFlag(i) {
         setFlagStates(prev => prev.map((s, idx) => idx === i ? !s : s))
@@ -41,6 +63,7 @@ export default function Dashboard() {
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
+            {loading && <div style={{ padding: 40, color: 'var(--muted)' }}>Loading...</div>}
 
             {/* ── Sidebar ── */}
             <aside style={{
@@ -226,15 +249,15 @@ export default function Dashboard() {
                                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                     >
                                         <div style={{ flex: 1 }}>
-                                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, marginBottom: 3 }}>{flag.name}</div>
-                                            <div style={{ fontSize: 12, color: 'var(--muted)' }}>{flag.desc}</div>
+                                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, marginBottom: 3 }}>{flag.key}</div>
+                                            <div style={{ fontSize: 12, color: 'var(--muted)' }}>{flag.rollout_percentage}% rollout</div>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                             <span style={{
                                                 fontSize: 11, fontFamily: 'var(--font-mono)',
                                                 background: 'var(--bg3)', padding: '3px 10px',
                                                 borderRadius: 100, color: 'var(--muted)'
-                                            }}>{flag.pct}</span>
+                                            }}>{flag.rollout_percentage}%</span>
                                             {/* Toggle */}
                                             <div onClick={() => toggleFlag(i)} style={{
                                                 width: 40, height: 22, borderRadius: 11, position: 'relative',
@@ -323,19 +346,19 @@ export default function Dashboard() {
                                             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                         >
                                             <td style={{ padding: '14px 20px', fontSize: 14, fontWeight: 500 }}>{exp.name}</td>
-                                            <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>{exp.variants}</td>
-                                            <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>{exp.traffic}</td>
-                                            <td style={{ padding: '14px 20px', fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>{exp.conversion}</td>
+                                            <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>-</td>
+                                            <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>-</td>
+                                            <td style={{ padding: '14px 20px', fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>-</td>
                                             <td style={{ padding: '14px 20px' }}>
                                                 <span style={{
                                                     fontSize: 11, fontFamily: 'var(--font-mono)',
                                                     padding: '3px 10px', borderRadius: 100,
-                                                    background: exp.status === 'running' ? 'rgba(58,240,122,0.1)' : 'rgba(125,133,144,0.1)',
-                                                    color: exp.status === 'running' ? 'var(--accent)' : 'var(--muted)',
-                                                    border: `1px solid ${exp.status === 'running' ? 'rgba(58,240,122,0.2)' : 'var(--border2)'}`
+                                                    background: exp.is_active ? 'rgba(58,240,122,0.1)' : 'rgba(125,133,144,0.1)',
+                                                    color: exp.is_active ? 'var(--accent)' : 'var(--muted)',
+                                                    border: `1px solid ${exp.is_active ? 'rgba(58,240,122,0.2)' : 'var(--border2)'}`
                                                 }}>
-                                                    {exp.status === 'running' && <span style={{ marginRight: 4 }}>●</span>}
-                                                    {exp.status}
+                                                    {exp.is_active && <span style={{ marginRight: 4 }}>●</span>}
+                                                    {exp.is_active ? 'running' : 'completed'}
                                                 </span>
                                             </td>
                                         </tr>

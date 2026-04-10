@@ -1,5 +1,6 @@
 const BASE_URL = import.meta.env.VITE_API_URL
-
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 // Auth
 export async function loginUser(email, password) {
     const res = await fetch(`${BASE_URL}/auth/login`, {
@@ -10,7 +11,24 @@ export async function loginUser(email, password) {
     if (!res.ok) throw new Error('Invalid credentials')
     return res.json()
 }
-
+export async function registerUser(name, email, password) {
+    const res = await fetch(`${BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+    })
+    if (!res.ok) throw new Error('Registration failed')
+    return res.json()
+}
+export async function setRoleUser(role) {
+    const res = await fetch(`${BASE_URL}/auth/role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+    })
+    if (!res.ok) throw new Error('Failed to set role')
+    return res.json()
+}
 // Decision
 export async function getDecision(user_id, experiment_id) {
     const res = await fetch(`${BASE_URL}/decision/?user_id=${user_id}&experiment_id=${experiment_id}`)
@@ -40,5 +58,18 @@ export async function getFlag(key, user_id) {
 export async function getAnalytics(experiment_id) {
     const res = await fetch(`${BASE_URL}/analytics/${experiment_id}`)
     if (!res.ok) throw new Error('Failed to get analytics')
+    return res.json()
+}
+// Get all flags
+export async function getAllFlags() {
+    const res = await fetch(`${BASE_URL}/flag/`)
+    if (!res.ok) throw new Error('Failed to fetch flags')
+    return res.json()
+}
+
+// Get all experiments
+export async function getAllExperiments() {
+    const res = await fetch(`${BASE_URL}/analytics/`)
+    if (!res.ok) throw new Error('Failed to fetch experiments')
     return res.json()
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { useAuth } from '../context/AuthContext'
-import { loginUser } from '../services/api'
+import { loginUser, registerUser } from '../services/api'
 
 
 export default function Auth() {
@@ -46,13 +46,25 @@ export default function Auth() {
             setLoading(false)
         }
     }
-    function handleSignup(e) {
+    async function handleSignup(e) {
         e.preventDefault()
+        const name = '${e.target.first.value} ${e.target.last.value}'
+        const email = e.target.email.value
+        const pwd = e.target.password.value
         const terms = e.target.terms.checked
         if (!terms) { setError('Please accept the Terms of Service.'); return }
+        if (!name || !email || !pwd) { setError('Please fill in all fields.'); return }
         setError('')
-        // signup endpoint doesn't exist yet — keeping mock flow for now
-        navigate('/role-selection')
+        setLoading(true)
+        try {
+            const userData = await registerUser(name, email, pwd)
+            login(userData)
+            navigate('/role-selection')
+        } catch (err) {
+            setError(err.message || 'Registration failed. Please try again.')
+        } finally {
+            setLoading(false)
+        }
     }    /*function handleSignup(e) {
         e.preventDefault()
         const terms = e.target.terms.checked

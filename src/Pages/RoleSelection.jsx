@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { setRoleUser } from '../services/api'
 
 const roles = [
     {
@@ -40,15 +41,20 @@ export default function RoleSelection() {
     const [selected, setSelected] = useState(null)
     const [loading, setLoading] = useState(false)
 
-    function handleContinue() {
+    // NEW
+    async function handleContinue() {
         if (!selected) return
         setLoading(true)
-        // TODO: POST /api/auth/role with selected role
-        setTimeout(() => {
+        try {
+            await setRoleUser(selected)
             navigate('/dashboard')
-        }, 800)
+        } catch (err) {
+            console.error('Failed to set role:', err)
+            // optionally show an error to the user
+        } finally {
+            setLoading(false)
+        }
     }
-
     return (
         <div className="grid-bg" style={{ minHeight: '100vh' }}>
             <div className="orb orb-1" />
